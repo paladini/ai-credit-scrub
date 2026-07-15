@@ -1,8 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">ai-credit-scrub</title><desc id="desc">Local Git guardrails for AI coding credits</desc>
-  <rect width="1200" height="630" fill="#f3f0e7"/><rect x="70" y="67" width="1060" height="496" fill="#17251f"/>
-  <rect x="110" y="110" width="222" height="38" fill="#d5f65d"/><text x="124" y="136" font-family="monospace" font-size="20" fill="#17251f">LOCAL · FREE</text>
-  <text x="110" y="250" font-family="Georgia,serif" font-size="90" font-weight="700" fill="#f3f0e7">ai-credit-scrub</text>
+  <title id="title">ai-credit-scrub</title>
+  <desc id="desc">Local Git guardrails for AI coding credits</desc>
+  <rect width="1200" height="630" fill="#f3f0e7"/>
+  <rect x="70" y="67" width="1060" height="496" fill="#17251f"/>
+  <rect x="110" y="110" width="250" height="38" fill="#d5f65d"/>
+  <text x="124" y="136" font-family="monospace" font-size="20" fill="#17251f">LOCAL · FREE</text>
+  <text x="110" y="250" font-family="Georgia, serif" font-size="90" font-weight="700" fill="#f3f0e7">ai-credit-scrub</text>
   <text x="110" y="335" font-family="monospace" font-size="31" fill="#d5f65d">Your work. Not your agent's signature.</text>
   <text x="110" y="470" font-family="monospace" font-size="25" fill="#f3f0e7">commit-msg → pre-push → sanitized PR creation</text>
 </svg>
