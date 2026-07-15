@@ -1,69 +1,82 @@
 # ai-credit-scrub
 
-> A local, zero-cost guardrail that removes explicit AI-agent credit text before Git commits or GitHub PR creation.
+> Local guardrails that remove explicit AI-agent credit text before it becomes
+> a Git commit or GitHub pull request.
 
-`ai-credit-scrub` is a conservative, offline-first Go CLI for developers who want
-their commit messages and PR copy to describe the work—not the coding assistant
-that helped create it. It supports explicit credit patterns from Codex, Claude
-Code, Cursor, Windsurf, and GitHub Copilot.
+[Website](https://paladini.github.io/ai-credit-scrub/) ·
+[Releases](https://github.com/paladini/ai-credit-scrub/releases) ·
+[Local enforcement guide](docs/local-enforcement.md) ·
+[Contributing](CONTRIBUTING.md)
 
-It never changes Git authors or committers, source code, existing history, or a
-normal mention of an AI product. It makes no network request while cleaning or
-checking text; only `pr create` invokes the locally installed GitHub CLI.
+`ai-credit-scrub` is a free, offline-first Go CLI for developers who want
+commit messages and pull requests to describe the work, not the coding agent
+that helped create it. It uses deterministic rules only. It does not call an
+AI model, send code or prompts anywhere, or alter Git authors and committers.
 
-## Install
+## Why local guardrails
 
-Download a release binary, or install from source:
+The useful time to remove an unwanted credit is before a commit is created or a
+pull request is submitted. CI can report a problem after publication, but it
+cannot provide that prevention. ai-credit-scrub protects the local developer
+workflow instead:
+
+1. A `commit-msg` hook rewrites the temporary message before Git creates the
+   commit object.
+2. A `pre-push` hook rejects outgoing commit messages that escaped the first
+   hook, for example through `git commit --no-verify`.
+3. `ai-credit-scrub pr create` cleans a PR title and body before delegating to
+   the locally installed GitHub CLI.
+
+## Install and protect a repository
+
+Download a binary from [GitHub Releases](https://github.com/paladini/ai-credit-scrub/releases),
+or install from source:
 
 ```sh
 go install github.com/paladini/ai-credit-scrub/cmd/ai-credit-scrub@latest
 ```
 
-Windows Scoop and macOS/Linux Homebrew manifests are published with releases.
-
-## Quick start
+Run this once from each repository you want to protect:
 
 ```sh
-# Inspect text without modifying it.
+ai-credit-scrub install --git
+```
+
+The installer creates and chains two local Git hooks. It preserves an existing
+hook by moving it aside and running it first. The generated hooks use the
+absolute path of the installed binary, so they also work when an IDE supplies a
+minimal `PATH`. Re-run the installer after moving the binary.
+
+## Use it before GitHub
+
+```sh
+# Inspect content without modifying it.
 ai-credit-scrub scan CHANGELOG.md
 
-# Clean stdin or files. Use --in-place only after reviewing scan output.
+# Clean a local text file after reviewing the scan results.
 ai-credit-scrub clean --in-place CHANGELOG.md
 
-# Install the local Git guardrail in the current repository.
-ai-credit-scrub install --git
-
-# Create a cleaned PR through the GitHub CLI.
-ai-credit-scrub pr create --title "Document hooks" --body "Add docs\n\nGenerated with Claude Code"
+# Create a sanitized PR through the local GitHub CLI.
+ai-credit-scrub pr create \
+  --title "Document local hooks" \
+  --body "Explain the local guardrail.\n\nGenerated with Claude Code"
 ```
 
-`check` has the same output as `scan`, but exits with status 1 when it finds a
-credit block. The local pre-push hook uses it as a last line of defense.
+`scan` reports matches. `check` reports the same matches and exits with status
+1, which is how the local `pre-push` hook blocks an escaped credit.
 
-The installer creates two local Git hooks:
+## What it removes and preserves
 
-- `commit-msg` runs after every client has proposed the message but before Git
-  creates the commit, and rewrites explicit credits out of that temporary file.
-- `pre-push` checks outgoing commit messages and rejects the push if a client
-  bypassed the first hook. It never rewrites existing history automatically.
+Built-in rules match complete, explicit credit lines and known agent trailers
+for Codex, Claude Code, Cursor, Windsurf, and GitHub Copilot. A normal mention
+such as “reviewed in Cursor” is preserved. Human `Co-authored-by` trailers are
+also preserved.
 
-The hooks record the absolute path of the installed binary so they also work
-when an IDE starts Git with a reduced `PATH`. Re-run `install --git` after
-moving or replacing that binary. Existing hooks are preserved and chained
-before ai-credit-scrub's hook body.
-
-```sh
-ai-credit-scrub check --format json README.md
-```
-
-## Custom rules
-
-Create `.ai-credit-scrub.yml` in a repository:
+Custom rules live in `.ai-credit-scrub.yml`. You must review scan output before
+enabling them:
 
 ```yaml
 version: 1
-# First run `ai-credit-scrub scan --config .ai-credit-scrub.yml FILE` and
-# review the matches. Only then acknowledge the rule review.
 reviewed: true
 literals:
   - "Internal agent credit"
@@ -73,37 +86,37 @@ exclude:
   - "historical example"
 ```
 
-Custom rules are rejected unless `reviewed: true` is set. This keeps a broad
-regex from silently removing content before it has been reviewed.
+Custom rules are rejected until `reviewed: true` is present. This prevents a
+broad expression from silently deleting content without an explicit review.
 
-## Integrations
+## Agent integrations
 
-| Ecosystem | v1 behavior | Install |
+The Git hooks are the enforcement layer. Agent adapters improve the local
+workflow but do not replace Git:
+
+| Tool | Local behavior | Install |
 | --- | --- | --- |
-| Git | Rewrites the temporary commit-message file before commit creation. | `install --git` |
-| Codex | Hook reminder for publication commands; local Git hooks enforce commit cleanup. | `install --adapter codex` |
-| Claude Code | Hook reminder for publication commands; local Git hooks enforce commit cleanup. | `install --adapter claude` |
-| Windsurf | Pre-command reminder; local Git hooks enforce commit cleanup. | `install --adapter windsurf` |
-| GitHub Copilot CLI | Repository hook notification; local Git hooks enforce commit cleanup. | `install --adapter copilot` |
-| Cursor | Agent rule; local Git hooks enforce commit cleanup. | `install --adapter cursor` |
+| Git | Rewrites commit messages and blocks escaped credits before push. | `install --git` |
+| Codex | Adds a local reminder to use the PR wrapper. | `install --adapter codex` |
+| Claude Code | Adds a local publication reminder. | `install --adapter claude` |
+| Windsurf | Adds a pre-command publication reminder. | `install --adapter windsurf` |
+| GitHub Copilot CLI | Adds a repository hook notification. | `install --adapter copilot` |
+| Cursor | Adds a workspace rule. | `install --adapter cursor` |
 
-For PRs, use `ai-credit-scrub pr create` instead of `gh pr create`; it cleans
-the explicit `--title`, `--body`, or `--body-file` input and forwards the rest
-of the arguments to `gh`.
+Read [the integration guide](docs/integrations.md) before enabling an adapter
+in a repository that already has agent configuration.
 
 ## Boundaries
 
-- `git commit --no-verify` can bypass `commit-msg`, but the installed
-  `pre-push` hook rejects the resulting credit before it leaves the machine.
-  `git push --no-verify` is an explicit escape hatch that no local client hook
-  can prevent.
-- Direct GitHub UI edits and hosted/cloud agents cannot be universally changed
-  before publication without replacing their GitHub integration with a local,
-  authorized wrapper or MCP server.
-- This project deliberately has no CI/CD enforcement surface: it prevents local
-  publication rather than discovering a problem after the fact.
-- This tool intentionally does not remove provenance required by policy, law,
-  or a contributor agreement. Review any custom rule before enabling it.
+- `git push --no-verify` is an explicit local escape hatch. No client hook can
+  prevent a user from intentionally disabling client hooks.
+- A PR created through the GitHub website or an independent GitHub MCP server
+  does not pass through Git. Use `ai-credit-scrub pr create`, or replace that
+  integration with a local MCP wrapper that you control.
+- The project intentionally does not ship a CI/CD enforcement Action. Its job
+  is prevention on the developer machine, not remediation after publication.
+- Confirm that removing a credit is compatible with your organization’s policy,
+  contributor agreement, and applicable law.
 
 ## Development
 
@@ -111,7 +124,8 @@ of the arguments to `gh`.
 go test ./...
 go vet ./...
 go build ./cmd/ai-credit-scrub
+node scripts/validate-site.mjs
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contributor guidance and
-[CHANGELOG.md](CHANGELOG.md) for release notes.
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
+[SUPPORT.md](SUPPORT.md) for project participation and support policies.

@@ -16,6 +16,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - run: go test ./...
       - run: go vet ./...
       - run: go build ./cmd/ai-credit-scrub
+      - run: node scripts/validate-site.mjs
