@@ -1,1 +1,1 @@
-{"name":"ai-credit-scrub","short_name":"ai-credit-scrub","start_url":"/ai-credit-scrub/","display":"browser","background_color":"#f3f0e7","theme_color":"#17251f"}
+{"name":"ai-credit-scrub","short_name":"ai-credit-scrub","description":"Local Git guardrails for AI coding credits.","start_url":"/ai-credit-scrub/","display":"browser","background_color":"#f3f0e7","theme_color":"#17251f","icons":[{"src":"favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
