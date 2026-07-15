@@ -1,7 +1,7 @@
 # ai-credit-scrub
 
-> A free local CLI that removes explicit AI-agent credit text before Git commits,
-> pushes, and GitHub pull request creation.
+> A free local CLI for developers who want to remove automatic AI-agent credit
+> text before Git commits, pushes, and GitHub pull request creation.
 
 ai-credit-scrub is an offline-first Go command-line tool. Its local Git hooks
 rewrite the temporary commit message before Git creates the commit and block an
