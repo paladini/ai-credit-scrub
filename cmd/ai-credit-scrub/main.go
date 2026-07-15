@@ -119,13 +119,11 @@ func install(args []string) {
 	fs.Parse(args)
 	if *gitHook {
 		root := gitRoot()
-		hook := filepath.Join(root, ".git", "hooks", "commit-msg")
-		must(os.MkdirAll(filepath.Dir(hook), 0o755))
 		executable, err := os.Executable()
 		must(err)
-		body := "#!/bin/sh\n\"" + executable + "\" clean --in-place \"$1\"\n"
-		must(os.WriteFile(hook, []byte(body), 0o755))
-		fmt.Println("installed Git commit-msg hook; reinstall it after moving this binary")
+		must(installHook(root, "commit-msg", commitMsgHook(executable)))
+		must(installHook(root, "pre-push", prePushHook(executable)))
+		fmt.Println("installed Git commit-msg rewriter and pre-push guard; reinstall after moving this binary")
 	}
 	if *adapter != "" {
 		root := gitRoot()
@@ -139,6 +137,42 @@ func install(args []string) {
 		must(os.WriteFile(target, []byte(body), 0o644))
 		fmt.Println("installed", *adapter, "adapter:", path)
 	}
+}
+
+func installHook(root, name, body string) error {
+	hook := filepath.Join(root, ".git", "hooks", name)
+	backup := hook + ".ai-credit-scrub-original"
+	if err := os.MkdirAll(filepath.Dir(hook), 0o755); err != nil {
+		return err
+	}
+	if _, err := os.Stat(hook); err == nil {
+		if _, backupErr := os.Stat(backup); os.IsNotExist(backupErr) {
+			if err := os.Rename(hook, backup); err != nil {
+				return fmt.Errorf("preserve existing %s hook: %w", name, err)
+			}
+		}
+	}
+	return os.WriteFile(hook, []byte(body), 0o755)
+}
+
+func hookPreamble(name string) string {
+	return "#!/bin/sh\nHOOK_DIR=$(CDPATH= cd -- \"$(dirname -- \"$0\")\" && pwd)\nORIGINAL=\"$HOOK_DIR/" + name + ".ai-credit-scrub-original\"\nif [ -x \"$ORIGINAL\" ]; then \"$ORIGINAL\" \"$@\" || exit $?; fi\n"
+}
+
+func commitMsgHook(executable string) string {
+	return hookPreamble("commit-msg") + "\"" + executable + "\" clean --in-place \"$1\"\n"
+}
+
+func prePushHook(executable string) string {
+	return hookPreamble("pre-push") + `while read local_ref local_sha remote_ref remote_sha; do
+  if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then continue; fi
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then range="$local_sha"; else range="$remote_sha..$local_sha"; fi
+  git log --format=%B "$range" | "` + executable + `" check || {
+    echo "ai-credit-scrub: push blocked; amend the affected commit or remove its explicit credit text." >&2
+    exit 1
+  }
+done
+`
 }
 
 func pr(args []string) {

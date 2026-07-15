@@ -13,3 +13,14 @@ func TestAdapterFilesDescribeAllProviders(t *testing.T) {
 		}
 	}
 }
+
+func TestGitHookBodiesPreserveExistingHooksAndGuardPushes(t *testing.T) {
+	commit := commitMsgHook("/tmp/ai-credit-scrub")
+	if !strings.Contains(commit, "commit-msg.ai-credit-scrub-original") || !strings.Contains(commit, "clean --in-place") {
+		t.Fatalf("unexpected commit hook: %s", commit)
+	}
+	push := prePushHook("/tmp/ai-credit-scrub")
+	if !strings.Contains(push, "pre-push.ai-credit-scrub-original") || !strings.Contains(push, "git log --format=%B") || !strings.Contains(push, "check") {
+		t.Fatalf("unexpected pre-push hook: %s", push)
+	}
+}
